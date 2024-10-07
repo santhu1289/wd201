@@ -1,0 +1,14 @@
+{
+  "name": "test1",
+  "version": "1.0.0",
+  "description": "my test file",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jane Doe <jane.doe@example.com>",
+  "license": "ISC",
+  "dependencies": {
+    "eslint": "^9.12.0"
+  }
+}
