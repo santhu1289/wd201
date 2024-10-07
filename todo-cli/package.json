@@ -9,8 +9,20 @@
   "author": "Jane Doe <jane.doe@example.com>",
   "license": "ISC",
   "description": "",
+  "lint-staged": {
+    "*.js": [
+      "eslint",
+      "prettier --write ."
+    ]
+  },
   "devDependencies": {
+    "@eslint/js": "^9.12.0",
+    "eslint": "^9.12.0",
+    "globals": "^15.10.0",
     "husky": "^9.1.6",
-    "jest": "^29.7.0"
+    "jest": "^29.7.0",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.3.3",
+    "typescript-eslint": "^8.8.1"
   }
 }
