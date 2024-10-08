@@ -1,4 +1,3 @@
-const { default: test } = require('node:test')
 const todoList = require('../todo')
 
 const { all, markAsComplete, add } = todoList()
