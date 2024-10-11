@@ -35,7 +35,7 @@ module.exports = (sequelize, DataTypes) => {
       return await Todo.findAll({
         where: {
           dueDate: { [Op.lt]: today },
-          completed: false, // Change to true to fetch completed tasks
+          completed: true, // Change to true to fetch completed tasks
         },
       })
     }
@@ -55,7 +55,7 @@ module.exports = (sequelize, DataTypes) => {
       return await Todo.findAll({
         where: {
           dueDate: { [Op.gt]: today },
-          completed: false,
+          completed: true,
         },
       })
     }
@@ -73,6 +73,11 @@ module.exports = (sequelize, DataTypes) => {
     displayableString() {
       const checkbox = this.completed ? '[x]' : '[ ]'
       const today = new Date().toISOString().split('T')[0]
+
+      // Always include the due date for completed past-due tasks
+      if (this.completed) {
+        return `${this.id}. ${checkbox} ${this.title} ${this.dueDate}`
+      }
 
       // If the task is due today, do not display the dueDate
       if (this.dueDate === today) {
