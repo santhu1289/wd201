@@ -5,18 +5,10 @@ const moment = require('moment')
 
 module.exports = (sequelize, DataTypes) => {
   class Todo extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
-
-    // Add a new task to the todo list
     static async addTask(params) {
       return await Todo.create(params)
     }
 
-    // Show the entire list in the required format
     static async showList() {
       console.log('My Todo-list\n')
 
@@ -35,7 +27,6 @@ module.exports = (sequelize, DataTypes) => {
       laterTasks.forEach((task) => console.log(task.displayableString()))
     }
 
-    // Get overdue tasks (tasks whose due date is before today and are not completed)
     static async overdue() {
       const today = moment().format('YYYY-MM-DD')
       return await Todo.findAll({
@@ -48,7 +39,6 @@ module.exports = (sequelize, DataTypes) => {
       })
     }
 
-    // Get tasks that are due today
     static async dueToday() {
       const today = moment().format('YYYY-MM-DD')
       return await Todo.findAll({
@@ -58,7 +48,6 @@ module.exports = (sequelize, DataTypes) => {
       })
     }
 
-    // Get tasks that are due later (tasks whose due date is after today)
     static async dueLater() {
       const today = moment().format('YYYY-MM-DD')
       return await Todo.findAll({
@@ -70,7 +59,6 @@ module.exports = (sequelize, DataTypes) => {
       })
     }
 
-    // Mark a task as completed
     static async markAsComplete(id) {
       const task = await Todo.findByPk(id)
       if (task) {
@@ -79,16 +67,14 @@ module.exports = (sequelize, DataTypes) => {
       }
     }
 
-    // Convert task into a displayable string
     displayableString() {
       const checkbox = this.completed ? '[x]' : '[ ]'
-      const formattedDate =
-        this.dueDate === moment().format('YYYY-MM-DD') ? '' : this.dueDate
-      return `${this.id}. ${checkbox} ${this.title.trim()} ${formattedDate}`
+      const isDueToday = this.dueDate === moment().format('YYYY-MM-DD')
+      const showDate = this.completed || !isDueToday ? this.dueDate : '' // Always show date if completed, even if overdue
+      return `${this.id}. ${checkbox} ${this.title.trim()} ${showDate}`
     }
   }
 
-  // Define the model's schema
   Todo.init(
     {
       title: DataTypes.STRING,
