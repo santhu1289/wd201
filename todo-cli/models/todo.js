@@ -34,7 +34,6 @@ module.exports = (sequelize, DataTypes) => {
           dueDate: {
             [Op.lt]: today,
           },
-          completed: false,
         },
       })
     }
@@ -69,9 +68,20 @@ module.exports = (sequelize, DataTypes) => {
 
     displayableString() {
       const checkbox = this.completed ? '[x]' : '[ ]'
-      const isDueToday = this.dueDate === moment().format('YYYY-MM-DD')
-      const showDate = this.completed || !isDueToday ? this.dueDate : '' // Always show date if completed, even if overdue
-      return `${this.id}. ${checkbox} ${this.title.trim()} ${showDate}`
+      const today = moment().format('YYYY-MM-DD')
+
+      // For past-due and completed tasks, always show the due date
+      if (this.completed && this.dueDate < today) {
+        return `${this.id}. ${checkbox} ${this.title.trim()} ${this.dueDate}`
+      }
+
+      // For tasks due today (both completed and incomplete), do not show the due date
+      if (this.dueDate === today) {
+        return `${this.id}. ${checkbox} ${this.title.trim()}`
+      }
+
+      // For incomplete tasks due later, show the due date
+      return `${this.id}. ${checkbox} ${this.title.trim()} ${this.dueDate}`
     }
   }
 
