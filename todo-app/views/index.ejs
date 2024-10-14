@@ -7,13 +7,11 @@
     <title>Document</title>
   </head>
   <body>
-    <%- include('header.ejs')%> <%- include('footer') %>
-    <table>
-      <% for (var i=0; i < allTodos.length; i++) { %>
-      <tr>
-        <td><%= allTodos[i].title %></td>
-      </tr>
-      <% } %>
-    </table>
+    <%- include('header.ejs')%>
+    <section>
+      <h2>Your Todos</h2>
+      <%- include('todos') %>
+    </section>
+    <%- include('footer') %>
   </body>
 </html>
