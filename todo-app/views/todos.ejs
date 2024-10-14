@@ -1,7 +1,14 @@
-<table>
-  <% for (var i=0; i < allTodos.length; i++) { %>
-  <tr>
-    <td><%= allTodos[i].title %></td>
-  </tr>
-  <% } %>
+<table border="1" cellpadding="10" cellspacing="0">
+  <thead>
+    <tr>
+      <th>Todo Title</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% for (var i=0; i < allTodos.length; i++) { %>
+    <tr>
+      <td><%= allTodos[i].title %></td>
+    </tr>
+    <% } %>
+  </tbody>
 </table>
