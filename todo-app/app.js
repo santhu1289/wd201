@@ -58,19 +58,35 @@ app.put("/todos/:id/markAsCompleted", async function (request, response) {
 });
 
 // DELETE /todos/:id - Delete a To-Do by ID
-app.delete("/todos/:id", async (request, response) => {
-  const todoId = request.params.id;
-  try {
-    const todo = await Todo.findByPk(todoId);
-    if (!todo) {
-      return response.status(404).json({ error: "Todo not found" });
-    }
+// app.delete("/todos/:id", async (request, response) => {
+//   const todoId = request.params.id;
+//   try {
+//     const todo = await Todo.findByPk(todoId);
+//     if (!todo) {
+//       return response.status(404).json({ error: "Todo not found" });
+//     }
 
-    await todo.destroy(); // Deletes the todo from the database
-    return response.json(true); // Return true as a JSON response
+//     await todo.destroy(); // Deletes the todo from the database
+//     return response.json(true); // Return true as a JSON response
+//     //return response.send(deleted ? true:false);
+//   } catch (error) {
+//     console.log(error);
+//     return response.status(500).json({ error: "Failed to delete todo" });
+//   }
+// });
+
+app.delete("/todos/:id", async function (request, response) {
+  const todoID = request.params.id;
+  try {
+    const todo = await Todo.findByPk(todoID); // Find the todo by ID
+    if (!todo) {
+      return response.status(404).send(false); // If the todo doesn't exist, return 404 with false
+    }
+    await todo.destroy(); // Delete the todo
+    return response.status(200).send(true); // Return true if deletion was successful
   } catch (error) {
-    console.log(error);
-    return response.status(500).json({ error: "Failed to delete todo" });
+    console.error(error);
+    return response.status(500).json({ error: "Something went wrong!" }); // Handle server error
   }
 });
 

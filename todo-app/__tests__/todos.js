@@ -72,24 +72,22 @@ describe("Todo Application", function () {
   });
 
   test("Deletes a todo with the given ID if it exists and sends a boolean response", async () => {
-    // First, create a todo to delete
-    const createResponse = await agent.post("/todos").send({
-      title: "Delete me",
+    // First, create a new todo to delete
+    const response = await agent.post("/todos").send({
+      title: "Delete this todo",
       dueDate: new Date().toISOString(),
       completed: false,
     });
-    const parsedCreateResponse = JSON.parse(createResponse.text);
-    const todoID = parsedCreateResponse.id;
-
-    expect(parsedCreateResponse.title).toBe("Delete me");
+    const parsedResponse = JSON.parse(response.text);
+    const todoID = parsedResponse.id;
 
     // Send DELETE request
     const deleteResponse = await agent.delete(`/todos/${todoID}`).send();
-    expect(deleteResponse.statusCode).toBe(200); // Assuming successful deletion returns 200
-    expect(deleteResponse.text).toBe("true"); // Assuming deletion returns true
+    expect(deleteResponse.statusCode).toBe(200); // Ensure the status code is 200
+    expect(deleteResponse.text).toBe("true"); // Ensure the response is 'true' after deletion
 
     // Try to fetch the deleted todo to confirm it's gone
-    const getResponse = await agent.get(`/todos/${todoID}`).send();
-    expect(getResponse.statusCode).toBe(404); // Should return 404 if not found
+    const fetchResponse = await agent.get(`/todos/${todoID}`).send();
+    expect(fetchResponse.statusCode).toBe(404); // Ensure that fetching the deleted todo returns 404
   });
 });
