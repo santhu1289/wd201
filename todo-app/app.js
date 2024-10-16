@@ -4,7 +4,7 @@ const { Todo } = require("./models");
 const path = require("path");
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // For form submissions
+app.use(express.urlencoded({ extended: false })); // For form submissions
 
 app.set("view engine", "ejs");
 app.use(express.static(path.join(__dirname, "public")));
@@ -57,7 +57,7 @@ app.get("/todos", async function (_request, response) {
 app.post("/todos", async function (request, response) {
   try {
     const todo = await Todo.addTodo(request.body);
-    return response.json(todo);
+    return response.redirect("/");
   } catch (error) {
     console.log(error);
     return response.status(422).json({ error: "Failed to create todo" });

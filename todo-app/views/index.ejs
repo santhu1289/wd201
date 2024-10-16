@@ -11,11 +11,12 @@
     <div class="grid grid-cols-6">
       <div class="col-start-3 col-span-2">
         <%- include('header.ejs') %>
-        <form action="">
+        <form action="/todos" method="post">
           <div class="flex gap-2 py-4">
             <div class="flex-auto">
               <input
                 type="text"
+                name="title"
                 placeholder="Whats Next?"
                 class="border border-gray-300 rounded text-gray-900 w-full p-2 text-sm"
                 required
@@ -24,6 +25,7 @@
             <div class="flex-auto">
               <input
                 type="date"
+                name="dueDate"
                 class="border border-gray-300 rounded text-gray-900 w-full p-2 text-sm leading-4"
               />
             </div>
