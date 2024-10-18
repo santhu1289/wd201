@@ -1,5 +1,5 @@
 const express = require("express");
-var csrf = require("csurf");
+var csrf = require("tiny-csrf");
 const app = express();
 const { Todo } = require("./models");
 const path = require("path");
@@ -7,7 +7,7 @@ var cookieParser = require("cookie-parser");
 app.use(express.json());
 app.use(express.urlencoded({ extended: false })); // For form submissions
 app.use(cookieParser("shh! some secrate string"));
-app.use(csrf({ cookie: true }));
+app.use(csrf("This_Shoul_be_32_Characters_long", ["POST", "PUT", "DELETE"]));
 app.set("view engine", "ejs");
 app.use(express.static(path.join(__dirname, "public")));
 
