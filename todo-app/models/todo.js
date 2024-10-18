@@ -26,6 +26,19 @@ module.exports = (sequelize, DataTypes) => {
         },
       });
     }
+
+    setCompletionStatus = async function (id, status) {
+      try {
+        const todo = await this.findByPk(id);
+        if (todo) {
+          todo.completed = status;
+          await todo.save();
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
     markAsCompleted() {
       return this.update({ completed: true });
     }

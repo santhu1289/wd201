@@ -39,7 +39,7 @@ app.get("/", async (request, response) => {
 
       return dueDate > currentDate && !todo.completed;
     });
-
+    const completedTodos = allTodos.filter((todo) => todo.completed);
     // Render the view based on the Accept header
     if (request.accepts("html")) {
       response.render("index", {
@@ -47,6 +47,7 @@ app.get("/", async (request, response) => {
         overdueTodos,
         dueTodayTodos,
         dueLaterTodos,
+        completedTodos,
         csrfToken: request.csrfToken(),
       });
     } else {
@@ -55,6 +56,7 @@ app.get("/", async (request, response) => {
         overdueTodos,
         dueTodayTodos,
         dueLaterTodos,
+        completedTodos,
       });
     }
   } catch (error) {
@@ -87,22 +89,60 @@ app.post("/todos", async function (request, response) {
 });
 
 // PUT /todos/:id/markAsCompleted - Mark a To-Do as completed
-app.put("/todos/:id/markAsCompleted", async function (request, response) {
-  const todo = await Todo.findByPk(request.params.id);
-  if (!todo) {
-    return response.status(404).json({ error: "Todo not found" });
-  }
-
+app.put("/todos/:id/markAsCompleted", async (req, res) => {
   try {
-    const updatedTodo = await todo.markAsCompleted();
-    return response.json(updatedTodo);
+    const todo = await Todo.findByPk(req.params.id);
+    if (!todo) {
+      return res.status(404).json({ error: "Todo not found" });
+    }
+    todo.completed = true; // Set completed to true
+    await todo.save();
+    return res.json(todo); // Send back the updated todo as JSON
   } catch (error) {
-    console.log(error);
-    return response
-      .status(422)
-      .json({ error: "Failed to mark todo as completed" });
+    return res.status(500).json({ error: "Failed to update todo" });
   }
 });
+
+app.put("/todos/:id/markAsIncomplete", async (req, res) => {
+  try {
+    const todo = await Todo.findByPk(req.params.id);
+    if (!todo) {
+      return res.status(404).json({ error: "Todo not found" });
+    }
+    todo.completed = false; // Set completed to false
+    await todo.save();
+    return res.json(todo); // Send back the updated todo as JSON
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to update todo" });
+  }
+});
+
+// router.put("/todos/:id", async (req, res) => {
+//   const id = req.params.id;
+//   const { completed } = req.body;
+
+//   try {
+//     await Todo.setCompletionStatus(id, completed);
+//     res.status(200).json({ message: "Todo updated successfully" });
+//   } catch (err) {
+//     res.status(500).json({ error: "Unable to update todo" });
+//   }
+// });
+
+// router.delete("/todos/:id", async (req, res) => {
+//   const id = req.params.id;
+//   try {
+//     const todo = await Todo.findByPk(id);
+//     if (todo) {
+//       await todo.destroy();
+//       res.status(200).json({ message: "Todo deleted successfully" });
+//     } else {
+//       res.status(404).json({ error: "Todo not found" });
+//     }
+//   } catch (err) {
+//     res.status(500).json({ error: "Unable to delete todo" });
+//   }
+// });
 
 // DELETE /todos/:id - Delete a To-Do by ID
 app.delete("/todos/:id", async (request, response) => {
