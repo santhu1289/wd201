@@ -59,7 +59,8 @@
         <% for (let i = 0; i < dueTodayTodos.length; i++) { %>
         <li class="Todo-Item flex items-center gap-2 mb-2">
           <input type="checkbox" <%=dueTodayTodos[i].completed ? "checked" : ""
-          %> name="list-item" id="due-today-item-<%= dueTodayTodos[i].id %>" />
+          %> onclick="updateTodo(<%= dueTodayTodos[i].id %>)" name="list-item"
+          id="due-today-item-<%= dueTodayTodos[i].id %>" />
           <label for="due-today-item-<%= i %>" class="text-md text-gray-600">
             <%= dueTodayTodos[i].title %>
           </label>
@@ -98,7 +99,8 @@
         <% for (let i = 0; i < dueLaterTodos.length; i++) { %>
         <li class="Todo-Item flex items-center gap-2 mb-2">
           <input type="checkbox" <%=dueLaterTodos[i].completed ? "checked" : ""
-          %> name="list-item" id="due-later-item-<%= dueLaterTodos[i].id %>" />
+          %> onclick="updateTodo(<%= dueLaterTodos[i].id %>)" name="list-item"
+          id="due-later-item-<%= dueLaterTodos[i].id %>" />
           <label for="due-later-item-<%= i %>" class="text-md text-gray-600">
             <%= dueLaterTodos[i].title %>
           </label>

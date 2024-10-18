@@ -1,11 +1,13 @@
 const express = require("express");
+var csrf = require("csurf");
 const app = express();
 const { Todo } = require("./models");
 const path = require("path");
-
+var cookieParser = require("cookie-parser");
 app.use(express.json());
 app.use(express.urlencoded({ extended: false })); // For form submissions
-
+app.use(cookieParser("shh! some secrate string"));
+app.use(csrf({ cookie: true }));
 app.set("view engine", "ejs");
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -45,6 +47,7 @@ app.get("/", async (request, response) => {
         overdueTodos,
         dueTodayTodos,
         dueLaterTodos,
+        csrfToken: request.csrfToken(),
       });
     } else {
       // Handle JSON response for API requests
