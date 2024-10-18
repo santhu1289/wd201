@@ -9,32 +9,51 @@ app.use(express.urlencoded({ extended: false })); // For form submissions
 app.set("view engine", "ejs");
 app.use(express.static(path.join(__dirname, "public")));
 
-// GET / - Render the main page with categorized todos
 app.get("/", async (request, response) => {
   try {
     const allTodos = await Todo.getTodos();
     const currentDate = new Date();
 
-    // Categorizing todos
-    const overdueTodos = allTodos.filter(
-      (todo) => new Date(todo.dueDate) < currentDate && !todo.completed
-    );
-    const dueTodayTodos = allTodos.filter(
-      (todo) =>
-        new Date(todo.dueDate).toDateString() === currentDate.toDateString() &&
-        !todo.completed
-    );
-    const dueLaterTodos = allTodos.filter(
-      (todo) => new Date(todo.dueDate) > currentDate && !todo.completed
-    );
+    currentDate.setHours(0, 0, 0, 0); // This ensures we're only comparing the dates, not the time
 
-    // Render the view
-    response.render("index", {
-      allTodos,
-      overdueTodos,
-      dueTodayTodos,
-      dueLaterTodos,
+    // Categorizing todos
+    const overdueTodos = allTodos.filter((todo) => {
+      const dueDate = new Date(todo.dueDate);
+      dueDate.setHours(0, 0, 0, 0); // Normalize the dueDate to midnight for comparison
+
+      return dueDate < currentDate && !todo.completed;
     });
+
+    const dueTodayTodos = allTodos.filter((todo) => {
+      const dueDate = new Date(todo.dueDate);
+      dueDate.setHours(0, 0, 0, 0); // Normalize the dueDate to midnight for comparison
+
+      return dueDate.getTime() === currentDate.getTime() && !todo.completed;
+    });
+
+    const dueLaterTodos = allTodos.filter((todo) => {
+      const dueDate = new Date(todo.dueDate);
+      dueDate.setHours(0, 0, 0, 0); // Normalize the dueDate to midnight for comparison
+
+      return dueDate > currentDate && !todo.completed;
+    });
+
+    // Render the view based on the Accept header
+    if (request.accepts("html")) {
+      response.render("index", {
+        allTodos,
+        overdueTodos,
+        dueTodayTodos,
+        dueLaterTodos,
+      });
+    } else {
+      // Handle JSON response for API requests
+      response.json({
+        overdueTodos,
+        dueTodayTodos,
+        dueLaterTodos,
+      });
+    }
   } catch (error) {
     console.error(error);
     response.status(500).json({ error: "Failed to load todos" });
@@ -83,18 +102,17 @@ app.put("/todos/:id/markAsCompleted", async function (request, response) {
 });
 
 // DELETE /todos/:id - Delete a To-Do by ID
-app.delete("/todos/:id", async function (request, response) {
-  const todoID = request.params.id;
+app.delete("/todos/:id", async (request, response) => {
+  console.log("Deleting Todo with ID:", request.params.id);
   try {
-    const todo = await Todo.findByPk(todoID); // Find the todo by ID
-    if (!todo) {
-      return response.status(404).send(false); // If the todo doesn't exist, return 404 with false
+    const result = await Todo.remove(request.params.id); // Ensure the `remove` function is implemented correctly
+    if (!result) {
+      return response.status(404).json({ error: "Todo not found" });
     }
-    await todo.destroy(); // Delete the todo
-    return response.status(200).send(true); // Return true if deletion was successful
+    return response.json({ success: true });
   } catch (error) {
-    console.error(error);
-    return response.status(500).json({ error: "Something went wrong!" }); // Handle server error
+    console.error("Error deleting todo:", error);
+    return response.status(422).json({ error: "Failed to delete todo" });
   }
 });
 
