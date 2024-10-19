@@ -1,9 +1,16 @@
 const express = require("express");
 var csrf = require("tiny-csrf");
 const app = express();
-const { Todo } = require("./models");
+const { Todo, User } = require("./models");
 const path = require("path");
 var cookieParser = require("cookie-parser");
+
+const passport = require("passport");
+const connectEnsureLogin = require("connect-ensure-login");
+const session = require("express-session");
+const LocalStartegy = require("passport-local");
+const { title } = require("process");
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false })); // For form submissions
 app.use(cookieParser("shh! some secrate string"));
@@ -11,58 +18,123 @@ app.use(csrf("This_Shoul_be_32_Characters_long", ["POST", "PUT", "DELETE"]));
 app.set("view engine", "ejs");
 app.use(express.static(path.join(__dirname, "public")));
 
-app.get("/", async (request, response) => {
-  try {
-    const allTodos = await Todo.getTodos();
-    const currentDate = new Date();
+app.use(
+  session({
+    secret: " my-super-secret-key-1234345334556677",
+    cookie: {
+      maxAge: 24 * 60 * 60 * 1000, //24hrs
+    },
+  })
+);
 
-    currentDate.setHours(0, 0, 0, 0); // This ensures we're only comparing the dates, not the time
+app.use(passport.initialize());
+app.use(passport.session());
 
-    // Categorizing todos
-    const overdueTodos = allTodos.filter((todo) => {
-      const dueDate = new Date(todo.dueDate);
-      dueDate.setHours(0, 0, 0, 0); // Normalize the dueDate to midnight for comparison
-
-      return dueDate < currentDate && !todo.completed;
-    });
-
-    const dueTodayTodos = allTodos.filter((todo) => {
-      const dueDate = new Date(todo.dueDate);
-      dueDate.setHours(0, 0, 0, 0); // Normalize the dueDate to midnight for comparison
-
-      return dueDate.getTime() === currentDate.getTime() && !todo.completed;
-    });
-
-    const dueLaterTodos = allTodos.filter((todo) => {
-      const dueDate = new Date(todo.dueDate);
-      dueDate.setHours(0, 0, 0, 0); // Normalize the dueDate to midnight for comparison
-
-      return dueDate > currentDate && !todo.completed;
-    });
-    const completedTodos = allTodos.filter((todo) => todo.completed);
-    // Render the view based on the Accept header
-    if (request.accepts("html")) {
-      response.render("index", {
-        allTodos,
-        overdueTodos,
-        dueTodayTodos,
-        dueLaterTodos,
-        completedTodos,
-        csrfToken: request.csrfToken(),
-      });
-    } else {
-      // Handle JSON response for API requests
-      response.json({
-        overdueTodos,
-        dueTodayTodos,
-        dueLaterTodos,
-        completedTodos,
-      });
+passport.use(
+  new LocalStartegy(
+    {
+      usernameField: "email",
+      passwordField: "password",
+    },
+    (username, password, done) => {
+      User.findOne({ where: { email: "username", password: "password" } })
+        .then((user) => {
+          return done(null, user);
+        })
+        .catch((error) => {
+          return error;
+        });
     }
-  } catch (error) {
-    console.error(error);
-    response.status(500).json({ error: "Failed to load todos" });
+  )
+);
+
+passport.serializeUser((user, done) => {
+  console.log("Serializing user in session ", user.id);
+  done(null, user.id);
+});
+
+passport.deserializeUser((id, done) => {
+  User.findByPk(id)
+    .then((user) => {
+      done(null, user);
+    })
+    .catch((error) => {
+      done(error, null);
+    });
+});
+
+app.get("/", async (request, response) => {
+  // Render the view based on the Accept header
+
+  response.render("index", {
+    title: "Todo Application",
+    csrfToken: request.csrfToken(),
+  });
+});
+
+app.get(
+  "/todos",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    try {
+      const allTodos = await Todo.getTodos();
+      const currentDate = new Date();
+
+      currentDate.setHours(0, 0, 0, 0); // This ensures we're only comparing the dates, not the time
+
+      // Categorizing todos
+      const overdueTodos = allTodos.filter((todo) => {
+        const dueDate = new Date(todo.dueDate);
+        dueDate.setHours(0, 0, 0, 0); // Normalize the dueDate to midnight for comparison
+
+        return dueDate < currentDate && !todo.completed;
+      });
+
+      const dueTodayTodos = allTodos.filter((todo) => {
+        const dueDate = new Date(todo.dueDate);
+        dueDate.setHours(0, 0, 0, 0); // Normalize the dueDate to midnight for comparison
+
+        return dueDate.getTime() === currentDate.getTime() && !todo.completed;
+      });
+
+      const dueLaterTodos = allTodos.filter((todo) => {
+        const dueDate = new Date(todo.dueDate);
+        dueDate.setHours(0, 0, 0, 0); // Normalize the dueDate to midnight for comparison
+
+        return dueDate > currentDate && !todo.completed;
+      });
+      const completedTodos = allTodos.filter((todo) => todo.completed);
+      // Render the view based on the Accept header
+      if (request.accepts("html")) {
+        response.render("todos", {
+          allTodos,
+          overdueTodos,
+          dueTodayTodos,
+          dueLaterTodos,
+          completedTodos,
+          csrfToken: request.csrfToken(),
+        });
+      } else {
+        // Handle JSON response for API requests
+        response.json({
+          overdueTodos,
+          dueTodayTodos,
+          dueLaterTodos,
+          completedTodos,
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      response.status(500).json({ error: "Failed to load todos" });
+    }
   }
+);
+
+app.get("/signup", (request, response) => {
+  response.render("signup", {
+    title: "Signup",
+    csrfToken: request.csrfToken(),
+  });
 });
 
 // GET /todos - Fetch all To-Dos from the database
@@ -74,6 +146,27 @@ app.get("/todos", async function (_request, response) {
   } catch (error) {
     console.error(error);
     return response.status(500).json({ error: "Failed to fetch todos" });
+  }
+});
+
+app.post("/users", async (request, response) => {
+  console.log("First Name", request.body.firstName);
+  //Here we creating forms for indivisual user
+  try {
+    const user = await User.create({
+      firstName: request.body.firstName,
+      lastName: request.body.lastName,
+      email: request.body.email,
+      password: request.body.password,
+    });
+    request.login(user, (err) => {
+      if (err) {
+        console.log(err);
+      }
+      response.redirect("/todos");
+    });
+  } catch (error) {
+    console.error(error);
   }
 });
 

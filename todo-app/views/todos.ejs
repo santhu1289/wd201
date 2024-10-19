@@ -1,146 +1,89 @@
-<div class="task-sections mt-5">
-  <!-- Overdue Section -->
-  <div class="OverDue mt-4">
-    <section title="Overdue">
-      <h5 id="overdue" class="text-xl font-bold">
-        Overdue (Count: <span id="count-overdue"> <%= overdueTodos.length %></span>)
-      </h5>
-      <ul class="overDueItems list-none">
-        <% for (let i = 0; i < overdueTodos.length; i++) { %>
-        <li class="Todo-Item flex items-center gap-2 mb-2">
-          <input type="checkbox" <%=overdueTodos[i].completed ? "checked" : ""
-          %> onclick="updateTodo(<%= overdueTodos[i].id %>)" name="list-item"
-          id="overdue-item-<%= overdueTodos[i].id %>" />
-          <label
-            for="overdue-item-<%= overdueTodos[i].id %>"
-            class="text-md text-gray-600"
-          >
-            <%= overdueTodos[i].title %>
-          </label>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="<%= csrfToken %>" />
+    <link href="./css/styles.css" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      var token = document
+        .querySelector('meta[name="csrf-token"]')
+        .getAttribute("content");
+      function updateTodo(id) {
+        fetch(`/todos/${id}/markAsCompleted`, {
+          method: "put",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            _csrf: token,
+          }),
+        })
+          .then((res) => {
+            if (res.ok) {
+              window.location.reload();
+            }
+          })
+          .catch((error) => console.error(error));
+      }
 
-          <!-- <a
-            href="#"
-            class="hidden trash-icon ml-2"
-            onclick="event.preventDefault(); deleteTodo('<%= overdueTodos[i].id %>');"
-          > -->
-          <a
-            href="#"
-            class="hidden trash-icon ml-2"
-            onclick="deleteTodo('<%= overdueTodos[i].id %>');"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              class="size-5"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
-              />
-            </svg>
-          </a>
-        </li>
-        <% } %>
-      </ul>
-    </section>
-  </div>
+      function deleteTodo(id) {
+        fetch(`/todos/${id}`, {
+          method: "delete",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            _csrf: token,
+          }),
+        })
+          .then((res) => {
+            if (res.ok) {
+              window.location.reload();
+            }
+          })
+          .catch((error) => console.error(error));
+      }
+    </script>
 
-  <!-- Due Today Section -->
-  <div class="DueToday mt-4">
-    <section title="Due Today">
-      <h5 id="due-today" class="text-xl font-bold">
-        Due Today (Count:<span id="count-due-today"><%= dueTodayTodos.length %></span> )
-      </h5>
-      <ul class="dueTodayItems list-none">
-        <% for (let i = 0; i < dueTodayTodos.length; i++) { %>
-        <li class="Todo-Item flex items-center gap-2 mb-2">
-          <input type="checkbox" <%=dueTodayTodos[i].completed ? "checked" : ""
-          %> onclick="updateTodo(<%= dueTodayTodos[i].id %>)" name="list-item"
-          id="due-today-item-<%= dueTodayTodos[i].id %>" />
-          <label for="due-today-item-<%= i %>" class="text-md text-gray-600">
-            <%= dueTodayTodos[i].title %>
-          </label>
-          <a
-            href="#"
-            class="hidden trash-icon ml-2"
-            onclick="deleteTodo('<%= dueTodayTodos[i].id %>');"
-            ><svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              class="size-5"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
-              />
-            </svg>
-          </a>
-        </li>
-        <% } %>
-      </ul>
-    </section>
-  </div>
+    <title>To-Do Manager</title>
+  </head>
+  <body>
+    <div class="grid grid-cols-6">
+      <div class="col-start-3 col-span-2">
+        <%- include('header.ejs') %>
 
-  <!-- Due Later Section -->
-  <div class="DueLater mt-4">
-    <section title="Due Later">
-      <h5 id="due-later" class="text-xl font-bold">
-        Due Later (Count:<span id="count-due-later"></span> <%= dueLaterTodos.length %></span>)
-      </h5>
-      <ul class="dueLaterItems list-none">
-        <% for (let i = 0; i < dueLaterTodos.length; i++) { %>
-        <li class="Todo-Item flex items-center gap-2 mb-2">
-          <input type="checkbox" <%=dueLaterTodos[i].completed ? "checked" : ""
-          %> onclick="updateTodo(<%= dueLaterTodos[i].id %>)" name="list-item"
-          id="due-later-item-<%= dueLaterTodos[i].id %>" />
-          <label for="due-later-item-<%= i %>" class="text-md text-gray-600">
-            <%= dueLaterTodos[i].title %>
-          </label>
-          <a
-            href="#"
-            class="hidden trash-icon ml-2"
-            onclick="deleteTodo('<%= dueLaterTodos[i].id %>');"
-            ><svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              class="size-5"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+        <form action="/todos" method="post">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <div class="flex gap-2 py-4">
+            <div class="flex-auto">
+              <input
+                type="text"
+                name="title"
+                placeholder="Whats Next?"
+                class="border border-gray-300 rounded text-gray-900 w-full p-2 text-sm"
+                required
               />
-            </svg>
-          </a>
-        </li>
-        <% } %>
-      </ul>
-    </section>
-  </div>
-  <div class="completed mt-4">
-    <section title="Completed">
-      <h5 id="Completed-Item" class="text-xl font-bold">Completed (Count: <span id="count-completed"><%= completedTodos.length %></span>)</h5>
-      <ul id="completed-todos">
-        <%- completedTodos.map(todo => `
-        <li class="Todo-Item">
-          <label for="todo-${todo.id}">
-            <input type="checkbox" id="todo-${todo.id}" checked disabled />
-            ${todo.title} - Due: ${todo.dueDate}
-          </label>
-        </li>
-        `).join('') %>
-      </ul>
-    </section>
-  </div>
-</div>
+            </div>
+            <div class="flex-auto">
+              <input
+                type="date"
+                name="dueDate"
+                class="border border-gray-300 rounded text-gray-900 w-full p-2 text-sm leading-4"
+              />
+            </div>
+            <div class="flex-none">
+              <button
+                type="submit"
+                class="bg-green-600 text-white px-5 py-1.5 rounded font-medium mr-2 mb-2"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- Include todos.ejs to list all the todos in three sections -->
+        <%- include('todo.ejs', { overdueTodos: overdueTodos, dueTodayTodos:
+        dueTodayTodos, dueLaterTodos: dueLaterTodos }) %>
+      </div>
+    </div>
+  </body>
+</html>
