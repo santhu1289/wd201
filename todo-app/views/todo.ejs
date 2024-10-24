@@ -3,7 +3,8 @@
   <div class="OverDue mt-4">
     <section title="Overdue">
       <h5 id="overdue" class="text-xl font-bold">
-        Overdue (Count: <span id="count-overdue"> <%= overdueTodos.length %></span>)
+        Overdue (Count:
+        <span id="count-overdue"> <%= overdueTodos.length %></span>)
       </h5>
       <ul class="overDueItems list-none">
         <% for (let i = 0; i < overdueTodos.length; i++) { %>
@@ -53,7 +54,10 @@
   <div class="DueToday mt-4">
     <section title="Due Today">
       <h5 id="due-today" class="text-xl font-bold">
-        Due Today (Count:<span id="count-due-today"><%= dueTodayTodos.length %></span> )
+        Due Today (Count:<span id="count-due-today"
+          ><%= dueTodayTodos.length %></span
+        >
+        )
       </h5>
       <ul class="dueTodayItems list-none">
         <% for (let i = 0; i < dueTodayTodos.length; i++) { %>
@@ -93,7 +97,8 @@
   <div class="DueLater mt-4">
     <section title="Due Later">
       <h5 id="due-later" class="text-xl font-bold">
-        Due Later (Count:<span id="count-due-later"></span> <%= dueLaterTodos.length %></span>)
+        Due Later (Count:
+        <span id="count-due-later"><%= dueLaterTodos.length %></span>)
       </h5>
       <ul class="dueLaterItems list-none">
         <% for (let i = 0; i < dueLaterTodos.length; i++) { %>
@@ -130,7 +135,10 @@
   </div>
   <div class="completed mt-4">
     <section title="Completed">
-      <h5 id="Completed-Item" class="text-xl font-bold">Completed (Count: <span id="count-completed"><%= completedTodos.length %></span>)</h5>
+      <h5 id="Completed-Item" class="text-xl font-bold">
+        Completed (Count:
+        <span id="count-completed"><%= completedTodos.length %></span>)
+      </h5>
       <ul id="completed-todos">
         <%- completedTodos.map(todo => `
         <li class="Todo-Item">

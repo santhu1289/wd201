@@ -1,22 +1,66 @@
 "use strict";
-const { Model } = require("sequelize");
+const { Model, Op } = require("sequelize");
+
 module.exports = (sequelize, DataTypes) => {
   class Todo extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
     static associate(models) {
       // define association here
     }
 
-    static addTodo({ title, dueDate }) {
-      return this.create({ title: title, dueDate: dueDate, completed: false });
+    static addTodo({ title, dueDate, userId }) {
+      return this.create({
+        title: title,
+        dueDate: dueDate,
+        completed: false,
+        userId, // Corrected from useId to userId
+      });
     }
 
-    static getTodos() {
-      return this.findAll();
+    static async overdueTodos(userId) {
+      return this.findAll({
+        where: {
+          dueDate: {
+            [Op.lt]: new Date(),
+          },
+          userId,
+          completed: false,
+        },
+      });
+    }
+
+    static async dueLaterTodos(userId) {
+      return this.findAll({
+        where: {
+          dueDate: {
+            [Op.gt]: new Date(),
+          },
+          userId,
+          completed: false,
+        },
+      });
+    }
+
+    static async dueTodayTodos(userId) {
+      const currentDate = new Date();
+      currentDate.setHours(0, 0, 0, 0);
+      return this.findAll({
+        where: {
+          dueDate: {
+            [Op.eq]: currentDate,
+          },
+          userId,
+          completed: false,
+        },
+      });
+    }
+
+    static async completedTodos(userId) {
+      return this.findAll({
+        where: {
+          userId,
+          completed: true,
+        },
+      });
     }
 
     static async remove(id) {
@@ -26,23 +70,8 @@ module.exports = (sequelize, DataTypes) => {
         },
       });
     }
-
-    setCompletionStatus = async function (id, status) {
-      try {
-        const todo = await this.findByPk(id);
-        if (todo) {
-          todo.completed = status;
-          await todo.save();
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    markAsCompleted() {
-      return this.update({ completed: true });
-    }
   }
+
   Todo.init(
     {
       title: DataTypes.STRING,
@@ -54,5 +83,6 @@ module.exports = (sequelize, DataTypes) => {
       modelName: "Todo",
     }
   );
+
   return Todo;
 };

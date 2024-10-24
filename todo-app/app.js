@@ -8,21 +8,25 @@ var cookieParser = require("cookie-parser");
 const passport = require("passport");
 const connectEnsureLogin = require("connect-ensure-login");
 const session = require("express-session");
-const LocalStartegy = require("passport-local");
-const { title } = require("process");
+const LocalStrategy = require("passport-local");
+const bcrypt = require("bcrypt");
+
+const saltRound = 10;
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: false })); // For form submissions
-app.use(cookieParser("shh! some secrate string"));
-app.use(csrf("This_Shoul_be_32_Characters_long", ["POST", "PUT", "DELETE"]));
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser("shh! some secret string"));
+app.use(csrf("A_very_secure_secret_of_32_char_", ["POST", "PUT", "DELETE"]));
 app.set("view engine", "ejs");
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use(
   session({
-    secret: " my-super-secret-key-1234345334556677",
+    secret: "my-super-secret-key-1234345334556677",
+    resave: false,
+    saveUninitialized: true,
     cookie: {
-      maxAge: 24 * 60 * 60 * 1000, //24hrs
+      maxAge: 24 * 60 * 60 * 1000, // 24hrs
     },
   })
 );
@@ -31,25 +35,27 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 passport.use(
-  new LocalStartegy(
+  new LocalStrategy(
     {
       usernameField: "email",
       passwordField: "password",
     },
-    (username, password, done) => {
-      User.findOne({ where: { email: "username", password: "password" } })
-        .then((user) => {
-          return done(null, user);
-        })
-        .catch((error) => {
-          return error;
-        });
+    async (username, password, done) => {
+      try {
+        const user = await User.findOne({ where: { email: username } });
+        if (!user) return done(null, false, { message: "Invalid email" });
+
+        const result = await bcrypt.compare(password, user.password);
+        if (result) return done(null, user);
+        else return done(null, false, { message: "Invalid Password" });
+      } catch (error) {
+        return done(error);
+      }
     }
   )
 );
 
 passport.serializeUser((user, done) => {
-  console.log("Serializing user in session ", user.id);
   done(null, user.id);
 });
 
@@ -63,9 +69,8 @@ passport.deserializeUser((id, done) => {
     });
 });
 
+// Routes
 app.get("/", async (request, response) => {
-  // Render the view based on the Accept header
-
   response.render("index", {
     title: "Todo Application",
     csrfToken: request.csrfToken(),
@@ -77,37 +82,20 @@ app.get(
   connectEnsureLogin.ensureLoggedIn(),
   async (request, response) => {
     try {
-      const allTodos = await Todo.getTodos();
-      const currentDate = new Date();
+      const loggedInUser = request.user.id;
+      const overdueTodos = await Todo.overdueTodos(loggedInUser);
+      const dueLaterTodos = await Todo.dueLaterTodos(loggedInUser);
+      const dueTodayTodos = await Todo.dueTodayTodos(loggedInUser);
+      const completedTodos = await Todo.completedTodos(loggedInUser);
 
-      currentDate.setHours(0, 0, 0, 0); // This ensures we're only comparing the dates, not the time
+      // Log the results to check if the data is fetched correctly
+      console.log("Overdue Todos:", overdueTodos);
+      console.log("Due Later Todos:", dueLaterTodos);
+      console.log("Due Today Todos:", dueTodayTodos);
+      console.log("Completed Todos:", completedTodos);
 
-      // Categorizing todos
-      const overdueTodos = allTodos.filter((todo) => {
-        const dueDate = new Date(todo.dueDate);
-        dueDate.setHours(0, 0, 0, 0); // Normalize the dueDate to midnight for comparison
-
-        return dueDate < currentDate && !todo.completed;
-      });
-
-      const dueTodayTodos = allTodos.filter((todo) => {
-        const dueDate = new Date(todo.dueDate);
-        dueDate.setHours(0, 0, 0, 0); // Normalize the dueDate to midnight for comparison
-
-        return dueDate.getTime() === currentDate.getTime() && !todo.completed;
-      });
-
-      const dueLaterTodos = allTodos.filter((todo) => {
-        const dueDate = new Date(todo.dueDate);
-        dueDate.setHours(0, 0, 0, 0); // Normalize the dueDate to midnight for comparison
-
-        return dueDate > currentDate && !todo.completed;
-      });
-      const completedTodos = allTodos.filter((todo) => todo.completed);
-      // Render the view based on the Accept header
       if (request.accepts("html")) {
         response.render("todos", {
-          allTodos,
           overdueTodos,
           dueTodayTodos,
           dueLaterTodos,
@@ -115,7 +103,6 @@ app.get(
           csrfToken: request.csrfToken(),
         });
       } else {
-        // Handle JSON response for API requests
         response.json({
           overdueTodos,
           dueTodayTodos,
@@ -137,119 +124,99 @@ app.get("/signup", (request, response) => {
   });
 });
 
-// GET /todos - Fetch all To-Dos from the database
-app.get("/todos", async function (_request, response) {
-  console.log("Processing list of all Todos ...");
-  try {
-    const todos = await Todo.findAll(); // Fetch all To-Dos
-    return response.json(todos); // Send back the list as JSON
-  } catch (error) {
-    console.error(error);
-    return response.status(500).json({ error: "Failed to fetch todos" });
+app.get("/login", (request, response) => {
+  response.render("login", { title: "Login", csrfToken: request.csrfToken() });
+});
+
+app.post(
+  "/session",
+  passport.authenticate("local", { failureRedirect: "/login" }),
+  (request, response) => {
+    response.redirect("/todos");
   }
+);
+
+app.get("/signout", (request, response, next) => {
+  request.logout((err) => {
+    if (err) {
+      return next(err);
+    }
+    response.redirect("/");
+  });
 });
 
 app.post("/users", async (request, response) => {
-  console.log("First Name", request.body.firstName);
-  //Here we creating forms for indivisual user
+  const hashedPwd = await bcrypt.hash(request.body.password, saltRound);
   try {
     const user = await User.create({
       firstName: request.body.firstName,
       lastName: request.body.lastName,
       email: request.body.email,
-      password: request.body.password,
+      password: hashedPwd,
     });
     request.login(user, (err) => {
       if (err) {
-        console.log(err);
+        console.error(err);
       }
       response.redirect("/todos");
     });
   } catch (error) {
     console.error(error);
+    response.status(500).json({ error: "Failed to create user" });
   }
 });
 
 // POST /todos - Create a new To-Do
-app.post("/todos", async function (request, response) {
-  try {
-    const todo = await Todo.addTodo(request.body);
-    return response.redirect("/");
-  } catch (error) {
-    console.log(error);
-    return response.status(422).json({ error: "Failed to create todo" });
-  }
-});
-
-// PUT /todos/:id/markAsCompleted - Mark a To-Do as completed
-app.put("/todos/:id/markAsCompleted", async (req, res) => {
-  try {
-    const todo = await Todo.findByPk(req.params.id);
-    if (!todo) {
-      return res.status(404).json({ error: "Todo not found" });
+app.post(
+  "/todos",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    try {
+      await Todo.addTodo({
+        title: request.body.title,
+        dueDate: request.body.dueDate,
+        userId: request.user.id,
+      });
+      response.redirect("/todos");
+    } catch (error) {
+      console.log(error);
+      response.status(422).json({ error: "Failed to create todo" });
     }
-    todo.completed = true; // Set completed to true
-    await todo.save();
-    return res.json(todo); // Send back the updated todo as JSON
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to update todo" });
   }
-});
+);
 
-app.put("/todos/:id/markAsIncomplete", async (req, res) => {
-  try {
-    const todo = await Todo.findByPk(req.params.id);
-    if (!todo) {
-      return res.status(404).json({ error: "Todo not found" });
+// PUT /todos/:id/markAsCompleted
+app.put(
+  "/todos/:id/markAsCompleted",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (req, res) => {
+    try {
+      const todo = await Todo.findByPk(req.params.id);
+      if (!todo) return res.status(404).json({ error: "Todo not found" });
+      todo.completed = true;
+      await todo.save();
+      return res.json(todo);
+    } catch (error) {
+      return res.status(500).json({ error: "Failed to update todo" });
     }
-    todo.completed = false; // Set completed to false
-    await todo.save();
-    return res.json(todo); // Send back the updated todo as JSON
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to update todo" });
   }
-});
-
-// router.put("/todos/:id", async (req, res) => {
-//   const id = req.params.id;
-//   const { completed } = req.body;
-
-//   try {
-//     await Todo.setCompletionStatus(id, completed);
-//     res.status(200).json({ message: "Todo updated successfully" });
-//   } catch (err) {
-//     res.status(500).json({ error: "Unable to update todo" });
-//   }
-// });
-
-// router.delete("/todos/:id", async (req, res) => {
-//   const id = req.params.id;
-//   try {
-//     const todo = await Todo.findByPk(id);
-//     if (todo) {
-//       await todo.destroy();
-//       res.status(200).json({ message: "Todo deleted successfully" });
-//     } else {
-//       res.status(404).json({ error: "Todo not found" });
-//     }
-//   } catch (err) {
-//     res.status(500).json({ error: "Unable to delete todo" });
-//   }
-// });
+);
 
 // DELETE /todos/:id - Delete a To-Do by ID
-app.delete("/todos/:id", async (request, response) => {
-  console.log("Deleting Todo with ID:", request.params.id);
-  try {
-    const result = await Todo.remove(request.params.id); // Ensure the `remove` function is implemented correctly
-    if (!result) {
-      return response.status(404).json({ error: "Todo not found" });
+app.delete(
+  "/todos/:id",
+  connectEnsureLogin.ensureLoggedIn(),
+  async (request, response) => {
+    try {
+      const result = await Todo.remove(request.params.id);
+      if (!result)
+        return response.status(404).json({ error: "Todo not found" });
+      return response.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting todo:", error);
+      return response.status(422).json({ error: "Failed to delete todo" });
     }
-    return response.json({ success: true });
-  } catch (error) {
-    console.error("Error deleting todo:", error);
-    return response.status(422).json({ error: "Failed to delete todo" });
   }
-});
+);
 
 module.exports = app;

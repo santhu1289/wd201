@@ -10,6 +10,7 @@
       var token = document
         .querySelector('meta[name="csrf-token"]')
         .getAttribute("content");
+
       function updateTodo(id) {
         fetch(`/todos/${id}/markAsCompleted`, {
           method: "put",
@@ -49,7 +50,7 @@
     <div class="grid grid-cols-6">
       <div class="col-start-3 col-span-2">
         <%- include('header.ejs') %>
-
+        <a href="/signout">Sign Out</a>
         <form action="/todos" method="post">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
           <div class="flex gap-2 py-4">
@@ -82,7 +83,8 @@
 
         <!-- Include todos.ejs to list all the todos in three sections -->
         <%- include('todo.ejs', { overdueTodos: overdueTodos, dueTodayTodos:
-        dueTodayTodos, dueLaterTodos: dueLaterTodos }) %>
+        dueTodayTodos, dueLaterTodos: dueLaterTodos,
+        completedTodos:completedTodos }) %>
       </div>
     </div>
   </body>
