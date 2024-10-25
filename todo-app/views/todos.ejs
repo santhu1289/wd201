@@ -80,11 +80,10 @@
             </div>
           </div>
         </form>
-
-        <!-- Include todos.ejs to list all the todos in three sections -->
-        <%- include('todo.ejs', { overdueTodos: overdueTodos, dueTodayTodos:
-        dueTodayTodos, dueLaterTodos: dueLaterTodos,
-        completedTodos:completedTodos }) %>
+        <div>
+          <!-- Include todos.ejs to list all the todos in three sections -->
+          <%- include('todo.ejs',{title:"Over Due" , data: overdueTodos}) %>
+        </div>
       </div>
     </div>
   </body>

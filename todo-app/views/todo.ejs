@@ -27,7 +27,7 @@
           <a
             href="#"
             class="hidden trash-icon ml-2"
-            onclick="deleteTodo('<%= overdueTodos[i].id %>');"
+            onclick="deleteTodo(`<%= overdueTodos[i].id %>`);"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -140,14 +140,14 @@
         <span id="count-completed"><%= completedTodos.length %></span>)
       </h5>
       <ul id="completed-todos">
-        <%- completedTodos.map(todo => `
+        <% completedTodos.forEach(function(todo) { %>
         <li class="Todo-Item">
-          <label for="todo-${todo.id}">
-            <input type="checkbox" id="todo-${todo.id}" checked disabled />
-            ${todo.title} - Due: ${todo.dueDate}
+          <label for="todo-<%= todo.id %>">
+            <input type="checkbox" id="todo-<%= todo.id %>" checked disabled />
+            <%= todo.title %> - Due: <%= todo.dueDate %>
           </label>
         </li>
-        `).join('') %>
+        <% }); %>
       </ul>
     </section>
   </div>

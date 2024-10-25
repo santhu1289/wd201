@@ -82,20 +82,18 @@ app.get(
   connectEnsureLogin.ensureLoggedIn(),
   async (request, response) => {
     try {
+      console.log(request.user.id);
       const loggedInUser = request.user.id;
       const overdueTodos = await Todo.overdueTodos(loggedInUser);
       const dueLaterTodos = await Todo.dueLaterTodos(loggedInUser);
       const dueTodayTodos = await Todo.dueTodayTodos(loggedInUser);
       const completedTodos = await Todo.completedTodos(loggedInUser);
+      // console.log(overdueTodos, dueTodayTodos, dueLaterTodos, completedTodos);
 
-      // Log the results to check if the data is fetched correctly
-      console.log("Overdue Todos:", overdueTodos);
-      console.log("Due Later Todos:", dueLaterTodos);
-      console.log("Due Today Todos:", dueTodayTodos);
-      console.log("Completed Todos:", completedTodos);
-
+      // Check if todos are properly fetched
       if (request.accepts("html")) {
         response.render("todos", {
+          title: "Your Todos",
           overdueTodos,
           dueTodayTodos,
           dueLaterTodos,
@@ -171,6 +169,7 @@ app.post(
   "/todos",
   connectEnsureLogin.ensureLoggedIn(),
   async (request, response) => {
+    console.log(request.user);
     try {
       await Todo.addTodo({
         title: request.body.title,
@@ -208,9 +207,12 @@ app.delete(
   connectEnsureLogin.ensureLoggedIn(),
   async (request, response) => {
     try {
-      const result = await Todo.remove(request.params.id);
+      const result = await Todo.remove(request.params.id, request.user.id); // Pass user ID
       if (!result)
-        return response.status(404).json({ error: "Todo not found" });
+        return response.status(404).json({
+          error:
+            "Todo not found or you do not have permission to delete this todo",
+        });
       return response.json({ success: true });
     } catch (error) {
       console.error("Error deleting todo:", error);

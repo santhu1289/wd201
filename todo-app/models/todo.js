@@ -5,6 +5,9 @@ module.exports = (sequelize, DataTypes) => {
   class Todo extends Model {
     static associate(models) {
       // define association here
+      Todo.belongsTo(models.User, {
+        foreignKey: "userId",
+      });
     }
 
     static addTodo({ title, dueDate, userId }) {
@@ -57,16 +60,17 @@ module.exports = (sequelize, DataTypes) => {
     static async completedTodos(userId) {
       return this.findAll({
         where: {
-          userId,
           completed: true,
+          userId,
         },
       });
     }
 
-    static async remove(id) {
+    static async remove(id, userId) {
       return this.destroy({
         where: {
           id,
+          userId,
         },
       });
     }
