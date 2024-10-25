@@ -8,11 +8,14 @@ var cookieParser = require("cookie-parser");
 const passport = require("passport");
 const connectEnsureLogin = require("connect-ensure-login");
 const session = require("express-session");
+const flash = require("connect-flash");
 const LocalStrategy = require("passport-local");
 const bcrypt = require("bcrypt");
 
 const saltRound = 10;
-
+// const path = require("path");
+app.set("views", path.join(__dirname, "views"));
+app.use(flash());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser("shh! some secret string"));
@@ -40,17 +43,23 @@ passport.use(
       usernameField: "email",
       passwordField: "password",
     },
-    async (username, password, done) => {
-      try {
-        const user = await User.findOne({ where: { email: username } });
-        if (!user) return done(null, false, { message: "Invalid email" });
+    (username, password, done) => {
+      User.findOne({ where: { email: username } })
+        .then(async (user) => {
+          if (!user) {
+            return done(null, false, { message: "No user with that email" });
+          }
 
-        const result = await bcrypt.compare(password, user.password);
-        if (result) return done(null, user);
-        else return done(null, false, { message: "Invalid Password" });
-      } catch (error) {
-        return done(error);
-      }
+          const result = await bcrypt.compare(password, user.password);
+          if (result) {
+            return done(null, user);
+          } else {
+            return done(null, false, { message: "Invalid password" });
+          }
+        })
+        .catch((err) => {
+          return done(err);
+        });
     }
   )
 );
@@ -115,6 +124,11 @@ app.get(
   }
 );
 
+app.use(function (request, response, next) {
+  response.locals.messages = request.flash();
+  next();
+});
+
 app.get("/signup", (request, response) => {
   response.render("signup", {
     title: "Signup",
@@ -128,8 +142,12 @@ app.get("/login", (request, response) => {
 
 app.post(
   "/session",
-  passport.authenticate("local", { failureRedirect: "/login" }),
-  (request, response) => {
+  passport.authenticate("local", {
+    failureRedirect: "/login",
+    failureFlash: true,
+  }),
+  function (request, response) {
+    console.log(request.user);
     response.redirect("/todos");
   }
 );
@@ -144,23 +162,33 @@ app.get("/signout", (request, response, next) => {
 });
 
 app.post("/users", async (request, response) => {
-  const hashedPwd = await bcrypt.hash(request.body.password, saltRound);
+  const { firstName, email, password } = request.body;
+
+  // Validate inputs
+  if (!firstName || !email) {
+    request.flash("error", "First name and email are required.");
+    return response.redirect("/signup"); // Redirect back to signup
+  }
+
+  const hashedPwd = await bcrypt.hash(password, saltRound);
   try {
     const user = await User.create({
-      firstName: request.body.firstName,
-      lastName: request.body.lastName,
-      email: request.body.email,
+      firstName,
+      lastName: request.body.lastName, // optional
+      email,
       password: hashedPwd,
     });
     request.login(user, (err) => {
       if (err) {
         console.error(err);
+        return response.redirect("/signup"); // Redirect back to signup
       }
       response.redirect("/todos");
     });
   } catch (error) {
     console.error(error);
-    response.status(500).json({ error: "Failed to create user" });
+    request.flash("error", "Failed to create user."); // Error message
+    response.redirect("/signup"); // Redirect back to signup
   }
 });
 
@@ -169,17 +197,26 @@ app.post(
   "/todos",
   connectEnsureLogin.ensureLoggedIn(),
   async (request, response) => {
-    console.log(request.user);
+    const { title, dueDate } = request.body;
+
+    // Validate inputs
+    if (!title || !dueDate) {
+      request.flash("error", "Both title and due date are required.");
+      return response.redirect("/todos"); // Redirect back to the todos page
+    }
+
     try {
       await Todo.addTodo({
-        title: request.body.title,
-        dueDate: request.body.dueDate,
+        title,
+        dueDate,
         userId: request.user.id,
       });
+      request.flash("success", "Todo created successfully!"); // Success message
       response.redirect("/todos");
     } catch (error) {
       console.log(error);
-      response.status(422).json({ error: "Failed to create todo" });
+      request.flash("error", "Failed to create todo."); // Error message
+      response.redirect("/todos"); // Redirect back to the todos page
     }
   }
 );

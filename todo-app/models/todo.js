@@ -4,7 +4,7 @@ const { Model, Op } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class Todo extends Model {
     static associate(models) {
-      // define association here
+      // Define association here
       Todo.belongsTo(models.User, {
         foreignKey: "userId",
       });
@@ -12,8 +12,8 @@ module.exports = (sequelize, DataTypes) => {
 
     static addTodo({ title, dueDate, userId }) {
       return this.create({
-        title: title,
-        dueDate: dueDate,
+        title,
+        dueDate,
         completed: false,
         userId, // Corrected from useId to userId
       });
@@ -78,9 +78,38 @@ module.exports = (sequelize, DataTypes) => {
 
   Todo.init(
     {
-      title: DataTypes.STRING,
-      dueDate: DataTypes.DATEONLY,
-      completed: DataTypes.BOOLEAN,
+      title: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+          notNull: {
+            msg: "Title cannot be null.",
+          },
+          notEmpty: {
+            msg: "Title cannot be empty.",
+          },
+          len: {
+            args: [5, 255], // Minimum of 5 and maximum of 255 characters
+            msg: "Title must be between 5 and 255 characters long.",
+          },
+        },
+      },
+      dueDate: {
+        type: DataTypes.DATEONLY,
+        allowNull: false, // Ensure that dueDate cannot be null
+        validate: {
+          isDate: {
+            msg: "Must be a valid date.",
+          },
+          notNull: {
+            msg: "Due date cannot be null.",
+          },
+        },
+      },
+      completed: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false, // Default value for completed
+      },
     },
     {
       sequelize,
